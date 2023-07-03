@@ -15,13 +15,14 @@ app.get('/', async (req, res, next) => {
   res.send({ message: 'Awesome it works 🐻' });
 });
 
-app.use('/api', require('./routes/api.route'));
+app.use('/api', require('./src/router/index'));
 
 app.use((req, res, next) => {
   next(createError.NotFound());
 });
 
 // Implementasi Sistem P3M Polimdo dengan Pendekatan Singgle Aplikasi
+//  npx prisma db push --force-reset
 
 app.use((err, req, res, next) => {
   res.status(err.status || 500);

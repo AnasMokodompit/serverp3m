@@ -14,19 +14,287 @@ datasource db {
 model User {
   id Int @id @default(autoincrement())
   name String @unique
-  nomor_tlp String
-  email String
-  password String
+  nomor_tlp String?
+  email String? @unique
+  password String?
+  username String @unique
+  nim String? @unique
+  nidn String? @unique
+  sinta String?
+  jabatan_fungsional String?
+  tempat_lahir String?
+  tanggalLahir DateTime?
+  pendidikan_terakhir String?
+  alamat String?
+  profile_picture String?
+  profile_picture_id String?
+  jurusan Jurusan? @relation(fields: [jurusanId], references: [id])
+  jurusanId Int?
+  prodi Prodi? @relation(fields: [prodiId], references: [id])
+  prodiId Int?
+  jenisKelamin JenisKelamin? @relation(fields: [jnsKelaminName], references: [name])
+  jnsKelaminName String?
+  role Role? @relation(fields: [roleId], references: [id])
+  roleId Int
   createdAt DateTime @default(now())
-  alamat Alamat? @relation(fields: [alamatId], references: [id])
-  alamatId Int?
+  updatedAt DateTime @default(now()) @updatedAt
+  partisipasiPengabdian PartisipasiPengabdian[]
+  partisipasiPenelitian PartisipasiPenelitian[]
+  reviewPenelitian ReviewPenelitian[]
+  reviewPengabdian ReviewPengabdian[]
+  dokumenPenelitian DokumenPenelitian[]
 }
 
-model Alamat {
+model Pengabdian {
   id Int @id @default(autoincrement())
-  provinsi String
-  kotaOrKabupaten String
-  kecamatan String
-  desaOrKelurahan String
+  judul String @unique
+  tema String
+  abstraksi String
+  pubInter String
+  pubNasion String
+  namaBerkas String
+  keterangan String
+  waktu DateTime
+  statusPengabdian Int
+  partisipasiPengabdian PartisipasiPengabdian[]
+  reviewPengabdian ReviewPengabdian[]
+}
+
+model PartisipasiPengabdian {
+  id Int @id @default(autoincrement())
+  user User? @relation(fields: [nameUser], references: [name])
+  nameUser String
+  pengabdian Pengabdian? @relation(fields: [judulPengabdian], references: [judul])
+  judulPengabdian String
+  jabatan String
+  statusPartisipasi Int
+  statusAkun Int
+  tugasdlmPenlitian String
+  catatanHarian CatatanHarian[]
+  laporanKemajuan LaporanKemajuan[]
+  laporanTahunan LaporanTahunan[]
+  laporanAkhir LaporanAkhir[]
+}
+
+model Penelitian {
+  id Int @id @default(autoincrement())
+  judul String @unique
+  tema String @db.VarChar(255)
+  abstraksi String @db.LongText
+  jenisTKT String
+  jenisTargetTKT String
+  bidangFokus String
+  biayaLuaran String
+  lamaKegiatan String
+  statusPenelitian Int
+  statusDibiayai Boolean @default(false)
+  statusRevisi Boolean
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  partisipasiPenelitian PartisipasiPenelitian[]
+  reviewPenelitian ReviewPenelitian[]
+  dokumenPenelitian DokumenPenelitian[]
+  nilaiPenelitian NilaiPenelitian []
+  laporanKemajuan LaporanKemajuan[]
+  laporanTahunan LaporanTahunan[]
+  laporanAkhir LaporanAkhir[]
+}
+
+model PartisipasiPenelitian {
+  id Int @id @default(autoincrement())
+  user User? @relation(fields: [nameUser], references: [name])
+  nameUser String
+  penelitian Penelitian? @relation(fields: [judulPenelitian], references: [judul])
+  judulPenelitian String
+  jabatan String?
+  tugasdlmPenlitian String
+  statusPartisipasi Int
+  statusAkun Int
+  statusRevisi Boolean?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  catatanHarian CatatanHarian[]
+  laporanKemajuan LaporanKemajuan[]
+  laporanTahunan LaporanTahunan[]
+  laporanAkhir LaporanAkhir[]
+}
+
+model ReviewPenelitian {
+  id Int @id @default(autoincrement())
+  user User? @relation(fields: [nameUser], references: [name])
+  nameUser String
+  penelitian Penelitian? @relation(fields: [judulPenelitian], references: [judul])
+  judulPenelitian String
+  sebagai String
+  revisi String?
+  nilaiPenelitian NilaiPenelitian[]
+}
+
+model NilaiPenelitian {
+  id Int @id @default(autoincrement())
+  reviewPenelitian ReviewPenelitian @relation(fields: [idReviewPenelitian], references: [id])
+  idReviewPenelitian Int
+  penelitian Penelitian @relation(fields: [judulPenelitian], references: [judul])
+  judulPenelitian String
+  nilai Int?
+}
+
+
+model ReviewPengabdian {
+  id Int @id @default(autoincrement())
+  user User? @relation(fields: [nameUser], references: [name])
+  nameUser String
+  pengabdian Pengabdian? @relation(fields: [judulPenelitian], references: [judul])
+  judulPenelitian String
+  sebagai String
+  revisi String?
+  nilaiPengabdian NilaiPengabdian[]
+}
+
+model NilaiPengabdian {
+  id Int @id @default(autoincrement())
+  reviewPengabdian ReviewPengabdian @relation(fields: [idReviewPengabdian], references: [id])
+  idReviewPengabdian Int
+  nilai Int?
+}
+
+model jadwalP3M {
+  id Int @id @default(autoincrement())
+  jadwalJudul String
+  tglMulai DateTime
+  tglAkhir DateTime
+  keterangan String?
+}
+
+model CatatanHarian {
+  id Int @id @default(autoincrement())
+  partisipasiPenelitian PartisipasiPenelitian? @relation(fields: [partisipasiPenelitianId], references: [id])
+  partisipasiPenelitianId Int?
+  partisipasiPengabdian PartisipasiPengabdian? @relation(fields: [partisipasiPengabdianId], references: [id])
+  partisipasiPengabdianId Int?
+  dokumenPenelitian DokumenPenelitian? @relation(fields: [idDokumenPenelitian], references: [id])
+  idDokumenPenelitian Int?
+  kegiatan String
+  ttg DateTime?
+  kehadiran String
+}
+
+model LaporanKemajuan {
+  id Int @id @default(autoincrement())
+  penelitian Penelitian @relation(fields: [judulPenelitian], references: [judul])
+  judulPenelitian String
+  dokumenPenelitian DokumenPenelitian? @relation(fields: [idDokumenPenelitian], references: [id])
+  idDokumenPenelitian Int?
+  partisipasiPenelitian PartisipasiPenelitian? @relation(fields: [partisipasiPenelitianId], references: [id])
+  partisipasiPenelitianId Int?
+  partisipasiPengabdian PartisipasiPengabdian? @relation(fields: [partisipasiPengabdianId], references: [id])
+  partisipasiPengabdianId Int?
+  tahanKemajuan String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model LaporanTahunan {
+  id Int @id @default(autoincrement())
+  penelitian Penelitian @relation(fields: [judulPenelitian], references: [judul])
+  judulPenelitian String
+  dokumenPenelitian DokumenPenelitian? @relation(fields: [idDokumenPenelitian], references: [id])
+  idDokumenPenelitian Int?
+  partisipasiPenelitian PartisipasiPenelitian? @relation(fields: [partisipasiPenelitianId], references: [id])
+  partisipasiPenelitianId Int?
+  partisipasiPengabdian PartisipasiPengabdian? @relation(fields: [partisipasiPengabdianId], references: [id])
+  partisipasiPengabdianId Int?
+  tahun String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model LaporanAkhir {
+  id Int @id @default(autoincrement())
+  penelitian Penelitian @relation(fields: [judulPenelitian], references: [judul])
+  judulPenelitian String
+  dokumenPenelitian DokumenPenelitian? @relation(fields: [idDokumenPenelitian], references: [id])
+  idDokumenPenelitian Int?
+  partisipasiPenelitian PartisipasiPenelitian? @relation(fields: [partisipasiPenelitianId], references: [id])
+  partisipasiPenelitianId Int?
+  partisipasiPengabdian PartisipasiPengabdian? @relation(fields: [partisipasiPengabdianId], references: [id])
+  partisipasiPengabdianId Int?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+}
+
+model DokumenPenelitian {
+  id Int @id @default(autoincrement())
+  name String
+  user User? @relation(fields: [nameUser], references: [name])
+  nameUser String
+  penelitian Penelitian? @relation(fields: [idPenelitian], references: [id])
+  idPenelitian Int
+  namePdf String
+  urlPdf String
+  pdf_id String
+  namePdfRevisi String?
+  urlPdfRevisi String?
+  pdf_idRevisi String?
+  catatanHarian CatatanHarian[]
+  laporanKemajuan LaporanKemajuan[]
+  laporanTahunan LaporanTahunan[]
+  laporanAkhir LaporanAkhir[]
+}
+
+model Prodi {
+  id Int @id @default(autoincrement())
+  name String @unique
+  jurusan Jurusan? @relation(fields: [nameJurusan], references: [name])
+  nameJurusan String
   user User[]
+}
+
+
+model Jurusan {
+  id Int @id @default(autoincrement())
+  name String @unique
+  prodi Prodi[]
+  user User[]
+}
+
+model JenisKelamin {
+  id Int @id @default(autoincrement())
+  name String @unique
+  user User[]
+}
+
+model Role {
+  id Int @unique
+  name String @unique
+  user User[]
+}
+
+model Provinsi {
+  id Int @id @default(autoincrement())
+  name String @unique
+  kotaOrKabupaten KotaOrKabupaten[]
+}
+
+model KotaOrKabupaten{
+  id Int @id @default(autoincrement())
+  name String @unique
+  provinsi Provinsi @relation(fields: [provinsiId], references: [id])
+  provinsiId Int
+  kecamatan Kecamatan[]
+}
+
+model Kecamatan{
+  id Int @id @default(autoincrement())
+  name String @unique
+  kotaOrKabupaten KotaOrKabupaten @relation(fields: [kotaOrKabupatenId], references: [id])
+  kotaOrKabupatenId Int
+  desaOrKelurahan DesaOrKelurahan[]
+}
+
+model DesaOrKelurahan{
+  id Int @id @default(autoincrement())
+  name String @unique
+  kecamatan Kecamatan @relation(fields: [kecamatanId], references: [id])
+  kecamatanId Int
 }

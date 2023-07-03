@@ -1,0 +1,61 @@
+[
+    {
+        "name": "Gobel",
+        "nomor_tlp": "0856914113",
+        "email": "gobelmokodompit@gmail.com",
+        "password": "gobel1234",
+        "username": "gobel_01",
+        "nidn": "122324BD",
+        "jurusanId": 1,
+        "roleId": 1
+    },
+    {
+        "name": "Alyssa Mokodompit",
+        "email": "ayamokodompit@gmail.com",
+        "password": "aya1234",
+        "username": "aya1",
+        "roleId": 2
+    },
+    {
+        "name": "Iting Pokoba",
+        "email": "itingpokoba@gmail.com",
+        "password": "iting1234",
+        "username": "iting",
+        "roleId": 2
+    },
+    {
+        "name": "Yanti Mokoginta",
+        "email": "yantimokoginta@gmail.com",
+        "password": "yanti1234",
+        "username": "yanti01",
+        "roleId": 3
+    },
+    {
+        "name": "Yanto Mokoginta",
+        "email": "yantomokoginta@gmail.com",
+        "password": "yanto1234",
+        "username": "yanto_1",
+        "roleId": 3
+    },
+    {
+        "name": "Yadi Mokoginta",
+        "email": "yadimokoginta@gmail.com",
+        "password": "yadi1234",
+        "username": "yadi_21",
+        "roleId": 3
+    },
+    {
+        "name": "Anas Urbaningrum Mokodompit",
+        "nim": "19024115",
+        "password": "mahasiswatest",
+        "username": "Anas Urbaningrum Mokodompit_test",
+        "roleId": 4
+    },
+    {
+        "name": "Wahyu Pratjojo",
+        "nim": "19024117",
+        "password": "mahasiswatest",
+        "username": "Wahyu Pratjojo_test",
+        "roleId": 4
+    }
+]
