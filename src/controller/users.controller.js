@@ -5,6 +5,7 @@ const cloudinary = require('../utility/cloudinary')
 const uploadCloudinary = async (path, opts) => await cloudinary.CloudinaryUpload(path,opts)
 const deleteCloudinary = async (opts) => await cloudinary.CloudinaryDelete(opts)
 const fs = require('fs')
+const pagination = require('../utility/pagenation')
 
 
 const prisma = new PrismaClient()
@@ -105,10 +106,17 @@ const createUser = async (req, res, next) => {
 const getAllUser = async (req, res, next) => {
   try {
 
-    const {nidn, name, Role} = req.query
+    const {nidn, name, Role, jabatanKampus} = req.query
+    
+    const {page, row} = pagination(req.query.page, req.query.row)
 
     const options = {
       where: {},
+      orderBy: {
+        id: "asc"
+      },
+      skip: page,
+      take: row,
       include: {
         jurusan: true,
         role: true,
@@ -125,17 +133,25 @@ const getAllUser = async (req, res, next) => {
     }
 
     if (name) {
-
       options.where.name = {
         contains: name
       }
     }
 
-    if (name?.length == 0) {
-      return res.status(201).json(responseModel.success(201, []))
+    if (jabatanKampus) {
+      options.where.jabtan_kampus = {
+        contains: jabatanKampus
+     } 
     }
     
+
+    // if (searchName?.length == 0) {
+    //   return res.status(201).json(responseModel.success(201, []))
+    // }
+    
     const users = await prisma.User.findMany(options)
+
+    console.log(users)
 
     return res.status(201).json(responseModel.success(201, users))
   } catch (error) {
@@ -173,6 +189,61 @@ const getByIdUser = async (req, res, next) => {
     })
     return res.status(200).json(responseModel.success(200, users))
   } catch (error) {
+    console.log(error)
+    return res.status(500).json(responseModel.error(500, `Internal Server Error`))
+  }
+}
+
+const updateUserByIdRoleAdmin = async (req,res) => {
+  try{
+    const {id} = req.params
+    // const {name, roleId} = req.user[0]
+    const {name, email, password, username, roleId, jabatan_kampus} = req.body
+
+    const dataUserUpdate = await prisma.user.findUnique({
+      where: {
+        id: Number(id)
+      },
+      include: {
+        jurusan: true,
+        prodi: true
+      }
+    })
+
+    // return console.log(dataUserUpdate)
+
+    const dataUpdate = {
+      name: name,
+      email: email,
+      username: username,
+      roleId: Number(roleId),
+      password: password
+    }
+
+    // return console.log(jabatan_kampus)
+    if (jabatan_kampus.length !== 0) {
+      if (jabatan_kampus == "Kepala Jurusan" && !dataUserUpdate.jurusanId) {
+          return res.status(404).json(responseModel.error(404, 'User Belum Melengkapi Data Jurusan'))
+      }else if (jabatan_kampus == "Kepala Program Studi" && !dataUserUpdate.prodiId) {
+          return res.status(404).json(responseModel.error(404, 'User Belum Melengkapi Data Program Studi'))
+      }
+
+
+      dataUpdate.jabtan_kampus = jabatan_kampus
+    }
+
+    const users = await prisma.user.update({
+      where: {
+        id: Number(id)
+      },
+      data: dataUpdate
+    })
+    
+
+    return res.status(200).json(responseModel.success(200, users))
+
+
+  }catch (error) {
     console.log(error)
     return res.status(500).json(responseModel.error(500, `Internal Server Error`))
   }
@@ -221,10 +292,6 @@ const updateUserById = async (req, res, next) => {
       if(req.body.newPassword !== req.body.newPasswordOne) {
           return res.status(404).json(responseModel.error(404, 'Password Baru Tidak Sama'))
       }
-    }
-
-    if (user.id === 1) {
-      dataUpdate.password = password
     }
 
 
@@ -300,6 +367,7 @@ module.exports = {
     createUser,
     getAllUser,
     getByIdUser,
+    updateUserByIdRoleAdmin,
     updateUserById,
     deleteUserById
 }

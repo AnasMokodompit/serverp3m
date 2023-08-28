@@ -144,6 +144,14 @@ const createOnlyAnggotaPenelitian = async (req, res)  => {
                     statusPartisipasi: 1
                 }
             })
+
+            await prisma.notification.create({
+                data: {
+                    nameUser: nameUser,
+                    judulPenelitian: cekPenelitianTElahDIajukan.judul,
+                    pesan: "Anda Terdaftar Pada Penelitian"
+                }
+            })
             
             
             return res.status(200).json(responseModel.success(200, dataCreatePartisiMahasiswa))
@@ -206,6 +214,14 @@ const createOnlyAnggotaPenelitian = async (req, res)  => {
                 tugasdlmPenlitian: tugasdlmPenlitian,
                 statusAkun: 1,
                 statusPartisipasi: 0
+            }
+        })
+
+        await prisma.notification.create({
+            data: {
+                nameUser: nameUser,
+                judulPenelitian: cekPenelitianTElahDIajukan.judul,
+                pesan: "Pemintaan Keanggotaan Penelitian"
             }
         })
 
@@ -333,10 +349,20 @@ const deleteByNidsOnlyAnggotaPenelitian = async (req, res)  => {
                 penelitian: true
             }
         })
+
+
         
         if (cekPenelitianTElahDIajukan.penelitian.statusPenelitian === 1 && user.roleId !== 1) {
             return res.status(404).json(responseModel.error(404, "Penelitian Telah Diajukan"))
         }
+
+        await prisma.notification.create({
+            data: {
+                nameUser: cekPenelitianTElahDIajukan.nameUser,
+                judulPenelitian: cekPenelitianTElahDIajukan.judulPenelitian,
+                pesan: "Keanggotaan Penelitian Dibatalkan"
+            }
+        })
 
         const dataAnggotaPenelianAfterDelete = await prisma.partisipasiPenelitian.delete({
             where: {
@@ -346,7 +372,6 @@ const deleteByNidsOnlyAnggotaPenelitian = async (req, res)  => {
                 penelitian: true
             }
         })
-
 
 
         return res.status(200).json(responseModel.success(200, dataAnggotaPenelianAfterDelete))

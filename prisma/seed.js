@@ -11,6 +11,11 @@ const prodi = require('./data/Prodi.json')
 const jurusan = require('./data/Jurusan.json')
 const user = require('./data/User.json')
 const jnsKelamin = require('./data/JenisKelamin')
+const skemaPenelitian = require('./data/SkemaPenelitian.json')
+const skemaPengabdian = require('./data/SkemaPengabdian.json')
+const ruangLingkupSkemaPengabdian = require('./data/RuangLingkupSkemaPengabdian.json')
+const deskripsiPenilaianPenelitian = require('./data/DeskripsiPenilaianPenelitian.json')
+const deskripsiPenilaianPengabdian = require('./data/DeskripsiPenilaianPengabdian.json')
 
 
 
@@ -18,96 +23,54 @@ const jnsKelamin = require('./data/JenisKelamin')
 async function main() {
 
     // Role
-    await Promise.all(
-        role.map(async (dataRole) => {
-            await prisma.role.create({
-                data: dataRole
-            })
-        })
-    )
+    await prisma.role.createMany({
+        data: role
+    })
 
     // Jenis Kelamin
-    await Promise.all(
-        jnsKelamin.map(async (datajnsKelamin) => {
-            await prisma.JenisKelamin.create({
-                data: datajnsKelamin
-            })
-        })
-        // jnsKelamin.map(async (datajnsKelamin) => {
-        //     await prisma.JenisKelamin.create({
-        //         data: datajnsKelamin
-        //     })
-        // })
-    )
+    await prisma.jenisKelamin.createMany({
+        data: jnsKelamin
+    })
 
     // Jurusan
-    await Promise.all(
-        jurusan.map(async (dataJurusan) => {
-            await prisma.Jurusan.create({
-                data: dataJurusan
-            })
-        })
-    )
+    await prisma.jurusan.createMany({
+        data: jurusan
+    })
 
      // Prodi
-     await Promise.all(
-        prodi.map(async (dataProdi) =>
-            await prisma.prodi.create({
-                data:dataProdi 
-            })
-        )
-    )
-    
-    // Provinsi
-    await Promise.all(
-        provinsi.map(async (dataProvinsi) => {
-           await prisma.provinsi.create({
-               data: dataProvinsi
-           })
-       })
-    )
-
+    await prisma.prodi.createMany({
+        data: prodi 
+    })
 
     // User
-    await Promise.all(
-        user.map(async(dataUser) => {
-            // console.log(dataUser)
-            await prisma.user.create({
-                data: dataUser
-            })
-        })
-    )
-    
-    // // Kecamatan Atau Kabupaten
-    await Promise.all(
-        kabupatenOrKota.map(async (dataKabupatenOrKota) => {
-            await prisma.kotaOrKabupaten.create({
-                data: dataKabupatenOrKota
-            })
-        })
-    ) 
+    await prisma.user.createMany({
+        data: user
+    })
 
-    // // Kecamatan
-    await Promise.all(
-        kecamatan.map(async (dataKecamatan) => {
-            await prisma.kecamatan.create({
-                data: dataKecamatan
-            })
-        })
-    )
+    // Skema Penelitian
+    await prisma.skemaPenelitian.createMany({
+        data: skemaPenelitian
+    })
 
-    // // Desa Atau Kelurahan
-    // await Promise.all(
-    //     desaOrKelurahan.map(async (dataDesaOrKelurahan) => {
-    //         await prisma.desaOrKelurahan.create({
-    //             data: dataDesaOrKelurahan
-    //         })
-    //     })
-    // )
+    // Skema Pengabdian
+    const tes = await prisma.skemaPengabdian.createMany({
+        data: skemaPengabdian
+    })
 
-    
-   
+    // Ruang Lingkup Skema Pengabdian
+    await prisma.ruangLingkupSkemaPengabdian.createMany({
+        data: ruangLingkupSkemaPengabdian
+    })
 
+    // Deskripsi Penilaian Penelitian
+    await prisma.deskripsiPenilaianPenlitian.createMany({
+        data: deskripsiPenilaianPenelitian
+    })
+
+    // Deskripsi Penilaian Pengabdian
+    await prisma.deskripsiPenilaianPengabdian.createMany({
+        data: deskripsiPenilaianPengabdian
+    })
 
     
 }

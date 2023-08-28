@@ -1,5 +1,7 @@
 const responseModel = require('../utility/responModel')
 const { PrismaClient } = require('@prisma/client')
+const pagination = require('../utility/pagenation')
+
 
 const prisma = new PrismaClient()
 
@@ -29,15 +31,31 @@ const getByAllPenjadwalan = async (req, res) => {
 
         const search = req.query.search
 
-        const options = {
-            where : {
+        const {searchJudulJadwal} = req.query
+        
 
+        const {page, row} = pagination(req.query.page, req.query.row)
+
+        const options = {
+            where: {},
+            orderBy: {
+                id: "asc"
+            },
+            skip: page,
+            take: row,
+        }
+
+        if (searchJudulJadwal) {
+            options.where.jadwalJudul = {
+                contains: searchJudulJadwal
             }
         }
 
         if (search) {
             options.where.jadwalJudul = search
         }
+
+        // return console.log(options)
 
 
         const dataAllJadwalP3M = await prisma.jadwalP3M.findMany(options)
@@ -64,6 +82,8 @@ const createPenjadwalan = async (req, res) => {
             tglMulai: tglMulai,
             tglAkhir: tglAkhir
         }
+
+        // return console.log(data)
 
         if (keterangan) {
             data.keterangan = keterangan

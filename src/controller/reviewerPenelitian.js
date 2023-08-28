@@ -1,25 +1,59 @@
 const responseModel = require('../utility/responModel')
 const { PrismaClient } = require('@prisma/client')
+const pagination = require('../utility/pagenation')
+
 
 const prisma = new PrismaClient()
 
 
 const getAllReviewerPenelitian = async (req,res) => {
     try{
-        const {judul} = req.query
+        const {judul, idJudulPenelitian} = req.query
         const user = req.user[0]
 
-        if (user.roleId === 1) {
-            
-            const getAllReviewPenelitianByNamePenelitian = await prisma.reviewPenelitian.findMany({
+        const {searchJudul} = req.query
+
+        const {page, row} = pagination(req.query.page, req.query.row)
+
+        if (idJudulPenelitian) {
+            const cekPenelitian = await prisma.penelitian.findUnique({
                 where: {
-                    judulPenelitian: judul
+                    id: Number(idJudulPenelitian)
                 },
                 include: {
-                    user: true,
-                    penelitian: true
+                    reviewPenelitian: true
                 }
             })
+
+            return res.status(200).json(responseModel.success(200, cekPenelitian))
+
+        }
+
+        const options = {
+            where: {},
+            orderBy: {
+                id: "asc"
+            },
+            skip: page,
+            take: row,
+        }
+
+        if (searchJudul) {
+            options.where.judulPenelitian = {
+                contains: searchJudul
+            }
+        }
+
+        if (user.roleId === 1) {
+
+            options.where.judulPenelitian = judul
+
+            options.include = {
+                user: true,
+                penelitian: true
+            }
+            
+            const getAllReviewPenelitianByNamePenelitian = await prisma.reviewPenelitian.findMany(options)
 
 
             // console.log(getAllReviewPenelitianByNamePenelitian)
@@ -27,22 +61,21 @@ const getAllReviewerPenelitian = async (req,res) => {
 
         }
 
-        if (user.roleId === 2) {    
+        if (user.roleId === 2) {   
+            
+            options.where.nameUser = user.name
 
-            const getAllReviewerPenelitianForUserReviewer = await prisma.ReviewPenelitian.findMany({
-                where: {
-                    nameUser: user.name
+            options.include = {
+                user: true,
+                penelitian: {
+                    include: {
+                        reviewPenelitian:true
+                    }
                 },
-                include: {
-                    user: true,
-                    penelitian: {
-                        include: {
-                            reviewPenelitian:true
-                        }
-                    },
-                    nilaiPenelitian: true
-                }
-            })
+                nilaiPenelitian: true
+            }
+
+            const getAllReviewerPenelitianForUserReviewer = await prisma.ReviewPenelitian.findMany(options)
     
     
             return res.status(200).json(responseModel.success(200, getAllReviewerPenelitianForUserReviewer))
@@ -68,7 +101,11 @@ const getByIdReviewerPenelitian = async (req, res) => {
             include: {
                 user: true,
                 penelitian: true,
-                nilaiPenelitian: true
+                nilaiPenelitian: {
+                    include: {
+                        deskripsiPenilaianPenlitian: true
+                    }
+                }
             }
         })
 
@@ -94,6 +131,12 @@ const createReviewerPenelitan = async (req, res) => {
             }
         })
 
+        const CekDuplikatUser  = nameUserCek.some((e, i, arr) => arr.indexOf(e) !== i)
+
+        if (CekDuplikatUser === true) {
+            return res.status(404).json(responseModel.error(404, `Duplikat Nama Reviewer`))
+        }
+
         const valuesIsYes = []
 
         cekDataUser.map((data) => {
@@ -118,10 +161,23 @@ const createReviewerPenelitan = async (req, res) => {
             return res.status(404).json(responseModel.error(404, `User ${newDataNotDaftar.map((data) => data)} Tidak Terdaftar`))
 
         }
+
+
+        const dataNotificationMahasiswa = data.map(data => {
+            return {
+                nameUser: data.nameUser,
+                judulPenelitian: data.judulPenelitian,
+                pesan: "Berikan Review Penelitian"
+            }
+        })
         
         
         const createReviewerPenelitian = await prisma.ReviewPenelitian.createMany({
             data: data
+        })
+        
+        await prisma.Notification.createMany({
+            data: dataNotificationMahasiswa
         })
 
         return res.status(200).json(responseModel.success(200, createReviewerPenelitian))
@@ -140,8 +196,9 @@ const updateReviewerPenelitian = async (req, res) => {
         
         const {Data, idDeleteReviewer} = req.body
 
+        
         const nameUserCek = Data.map((value) => value.nameUser)
-
+        
         
         const cekDataUser = await prisma.user.findMany({
             where: {
@@ -174,19 +231,55 @@ const updateReviewerPenelitian = async (req, res) => {
 
         }
 
+        const nameUserCekCreate  = nameUserCek.some((e, i, arr) => arr.indexOf(e) !== i)
+
+        if (nameUserCekCreate === true) {
+            return res.status(404).json(responseModel.error(404, `Duplikat Nama Reviewer`))
+        }
+
+
+        console.log(idDeleteReviewer)
 
         if (idDeleteReviewer.length !== 0) {
+            const dataDeleteReviwer =  await prisma.reviewPenelitian.findMany({
+                where: {
+                    id: {in: idDeleteReviewer}
+                }
+            })
+
+            const dataCreateNotif = {}
+            
             await prisma.reviewPenelitian.deleteMany({
                 where: {
                     id: {in: idDeleteReviewer}
                 }
             })
+
+            dataDeleteReviwer.map((data) => {
+                dataCreateNotif.nameUser = data.nameUser
+                dataCreateNotif.judulPenelitian = data.judulPenelitian
+                dataCreateNotif.pesan = "Review Penelitian Dibatalkan"
+            })
+
+            await prisma.notification.createMany({
+                data: dataCreateNotif
+            })
+
         }
 
+       
 
         Data.map(async (data,i ) => {
-            console.log(data)
+            // console.log(data)
             if (!data.id) {
+
+                await prisma.notification.create({
+                    data: {
+                        nameUser : data.nameUser,
+                        judulPenelitian : data.judulPenelitian,
+                        pesan : "Berikan Review Penelitian"
+                    }
+                })
                 
                 await prisma.reviewPenelitian.create({
                     data: {
@@ -197,6 +290,14 @@ const updateReviewerPenelitian = async (req, res) => {
                 })
 
             }else{
+
+                await prisma.notification.create({
+                    data: {
+                        nameUser : data.nameUser,
+                        judulPenelitian : data.judulPenelitian,
+                        pesan : "Berikan Review Penelitian"
+                    }
+                })
                 
                 await prisma.reviewPenelitian.update({
                     where: {
@@ -230,6 +331,8 @@ const updateReviewerByUserPenelitian = async (req, res) => {
         const idNilai = []
 
 
+
+        // return console.log(req.body)
         
         
         const cekByIdDataReviewer = await prisma.reviewPenelitian.findUnique({
@@ -247,6 +350,9 @@ const updateReviewerByUserPenelitian = async (req, res) => {
         })
 
 
+        // return console.log(cekByIdDataReviewer.penelitian.partisipasiPenelitian[0].nameUser)
+
+
         nilai.map((data, i) => {
            data.idReviewPenelitian = cekByIdDataReviewer.id
            data.judulPenelitian = cekByIdDataReviewer.judulPenelitian
@@ -255,7 +361,6 @@ const updateReviewerByUserPenelitian = async (req, res) => {
                data.nilai = Number(data.nilai)
            }
         })
-
         
         if (revisi) {
 
@@ -274,6 +379,14 @@ const updateReviewerByUserPenelitian = async (req, res) => {
                 },
                 data: {
                     statusRevisi: true
+                }
+            })
+
+            await prisma.notification.create({
+                data: {
+                    nameUser: cekByIdDataReviewer.penelitian.partisipasiPenelitian[0].nameUser,
+                    judulPenelitian: cekByIdDataReviewer.judulPenelitian,
+                    pesan: "Penelitian Terdaftar Revisi"
                 }
             })
 

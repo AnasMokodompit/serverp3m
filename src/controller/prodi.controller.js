@@ -1,5 +1,7 @@
 const responseModel = require('../utility/responModel')
 const { PrismaClient } = require('@prisma/client')
+const pagination = require('../utility/pagenation')
+
 
 const prisma = new PrismaClient()
 
@@ -29,6 +31,27 @@ const getByAllProdi = async (req, res) => {
 
         const {nameJurusan} = req.query
 
+        const {searchName} = req.query
+
+        const {page, row} = pagination(req.query.page, req.query.row)
+
+
+        const options = {
+            where: {},
+            orderBy: {
+                id: "asc"
+            },
+            skip: page,
+            take: row,
+        }
+
+    
+        if (searchName) {
+            options.where.name = {
+                contains: searchName
+            }
+        }
+
         
         if (nameJurusan) {
 
@@ -41,7 +64,7 @@ const getByAllProdi = async (req, res) => {
             return res.status(200).json(responseModel.success(200, dataAllProdi))
         }
 
-        const dataAllProdi = await prisma.prodi.findMany()
+        const dataAllProdi = await prisma.prodi.findMany(options)
     
         return res.status(200).json(responseModel.success(200, dataAllProdi))
 

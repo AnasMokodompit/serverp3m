@@ -2,6 +2,8 @@ const responseModel = require('../utility/responModel')
 const { PrismaClient } = require('@prisma/client')
 const cloudinary = require('../utility/cloudinary')
 const uploadCloudinary = async (path, opts) => await cloudinary.CloudinaryUpload(path,opts)
+const pagination = require('../utility/pagenation')
+
 
 
 const prisma = new PrismaClient()
@@ -9,47 +11,206 @@ const prisma = new PrismaClient()
 const getAllCatatanHarian = async (req, res) => {
     try{
         const user = req.user[0]
-        const idPartisiPenelitian = []
+        const idPartisipasiPenelitian = []
+        const idPartisipasiPengabdian = []
+        const {searchJudul} = req.query
+        let cekPenelitian = ''
+        let cekPengabdian = ''
 
-        // return console.log(user.roleId)
+        const {page, row} = pagination(req.query.page, req.query.row)
+        
+        const options = {
+            where: {},
+            orderBy: {
+                id: "asc"
+            },
+            skip: page,
+            take: row,
+        }
 
+        if (searchJudul) {
+            
+            cekPenelitian = await prisma.penelitian.findMany({
+                where: {
+                    judul: {
+                        contains: searchJudul
+                    }
+                }
+            })
+    
+            cekPengabdian = await prisma.pengabdian.findMany({
+                where: {
+                    judul: {
+                        contains: searchJudul
+                    }
+                }
+            })
+
+
+            if (cekPenelitian.length !== 0) {
+                options.where.judulPenelitian = {
+                    contains: searchJudul
+                }
+                
+            }else{
+                options.where.judulPengabdian = {
+                    contains: searchJudul
+                }
+            }
+        }
+
+        
         if (user.roleId === 1) {
 
+            let cekParitisiPenelitian = ''
+            let cekParitisiPengabdian = '' 
+            
+            
+            if (options.where.judulPenelitian) {
+                cekParitisiPenelitian = await prisma.partisipasiPenelitian.findMany(options)
+                
+            }else if (options.where.judulPengabdian) {
+                cekParitisiPengabdian = await prisma.partisipasiPengabdian.findMany(options)
+
+            }else{
+                cekParitisiPenelitian = await prisma.partisipasiPenelitian.findMany({
+                    orderBy: {
+                        id: "asc"
+                    },
+                    skip: page,
+                    take: row,
+                })
+                cekParitisiPengabdian = await prisma.partisipasiPengabdian.findMany({
+                    orderBy: {
+                        id: "asc"
+                    },
+                    skip: page,
+                    take: row,
+                })
+
+            }
+
+            // return console.log(options, cekParitisiPengabdian)
+
+            if (cekParitisiPenelitian.length !== 0) {
+                cekParitisiPenelitian.map((data) => {
+                    idPartisipasiPenelitian.push(data.id)
+                })
+                
+            }
+
+            if (cekParitisiPengabdian.length !== 0) {
+                cekParitisiPengabdian.map((data) => {
+                    idPartisipasiPengabdian.push(data.id)
+                })
+            }
+
+
+
+            // return console.log(idPartisipasiPenelitian, idPartisipasiPengabdian)
+            
+            
             const getDataAllCatatanHarian = await prisma.catatanHarian.findMany({
+                where: {
+                    OR: [
+                        {
+
+                            partisipasiPenelitianId: {in: idPartisipasiPenelitian},
+                        },
+                        {
+
+                            partisipasiPengabdianId: {in: idPartisipasiPengabdian}
+                        }
+                    ]
+                },
                 include: {
                     partisipasiPenelitian: {
                         include: {
                             penelitian: true
                         }
                     },
-                    partisipasiPengabdian: true,
-                    dokumenPenelitian: true
-                },
+                    partisipasiPengabdian: {
+                        include: {
+                            pengabdian: true
+                        }
+                    },
+                    Dokumen: true
+                }
             })
-    
+            
             // return console.log(getDataAllCatatanHarian)
-    
+
             return res.status(200).json(responseModel.success(200, getDataAllCatatanHarian))
         }
-
         
-        const cekNameUser = await prisma.partisipasiPenelitian.findMany({
-            where: {
-                nameUser: user?.name
-            }
-        })
+        options.where.nameUser = user?.name
+
+        let cekParitisiPenelitian = ''
+        let cekParitisiPengabdian = '' 
+        
+        
+        if (options.where.judulPenelitian) {
+            cekParitisiPenelitian = await prisma.partisipasiPenelitian.findMany(options)
+            
+        }else if (options.where.judulPengabdian) {
+            cekParitisiPengabdian = await prisma.partisipasiPengabdian.findMany(options)
+
+        }else{
+            cekParitisiPenelitian = await prisma.partisipasiPenelitian.findMany({
+                where: {
+                    nameUser: user?.name
+                },
+                orderBy: {
+                    id: "asc"
+                },
+                skip: page,
+                take: row,
+            })
+            cekParitisiPengabdian = await prisma.partisipasiPengabdian.findMany({
+                where: {
+                    nameUser: user?.name
+                },
+                orderBy: {
+                    id: "asc"
+                },
+                skip: page,
+                take: row,
+            })
+
+        }
+
+        // return console.log(options, cekParitisiPengabdian)
+
+        if (cekParitisiPenelitian.length !== 0) {
+            cekParitisiPenelitian.map((data) => {
+                idPartisipasiPenelitian.push(data.id)
+            })
+            
+        }
+
+        if (cekParitisiPengabdian.length !== 0) {
+            cekParitisiPengabdian.map((data) => {
+                idPartisipasiPengabdian.push(data.id)
+            })
+        }
 
 
-        cekNameUser.map((data) => {
-            idPartisiPenelitian.push(data.id)
-        })
 
-
-        // return console.log(idPartisiPenelitian)
-
+        // return console.log(idPartisipasiPenelitian, idPartisipasiPengabdian)
+        
+        
         const getDataAllCatatanHarian = await prisma.catatanHarian.findMany({
             where: {
-                partisipasiPenelitianId: {in: idPartisiPenelitian}
+                OR: [
+                    {
+
+                        partisipasiPenelitianId: {in: idPartisipasiPenelitian},
+                    },
+                    {
+
+                        partisipasiPengabdianId: {in: idPartisipasiPengabdian}
+                    }
+                ]
             },
             include: {
                 partisipasiPenelitian: {
@@ -57,16 +218,18 @@ const getAllCatatanHarian = async (req, res) => {
                         penelitian: true
                     }
                 },
-                partisipasiPengabdian: true,
-                dokumenPenelitian: true
-            },
+                partisipasiPengabdian: {
+                    include: {
+                        pengabdian: true
+                    }
+                },
+                Dokumen: true
+            }
         })
-
+        
         // return console.log(getDataAllCatatanHarian)
 
-
         return res.status(200).json(responseModel.success(200, getDataAllCatatanHarian))
-
 
     }catch(error){
         console.log(error)
@@ -85,7 +248,7 @@ const getByIdCatatanHarian = async (req, res) => {
             include: {
                 partisipasiPenelitian: true,
                 partisipasiPengabdian: true,
-                dokumenPenelitian: true
+                Dokumen: true
             }
         })
 
@@ -99,23 +262,56 @@ const getByIdCatatanHarian = async (req, res) => {
 
 const createCatatanHarian = async (req, res) => {
     try{
-        const {kegiatan, ttg, kehadiran, partisipasiPenelitianId, partisipasiPengabdianId} = req.body
+        const {kegiatan, ttg, kehadiran, partisipasiUsulanId} = req.body
         const user = req.user[0]
         let idDokumenCatatanHarian = ''
-        let cekPenelitianId = ''
 
-        // console.log(partisipasiPenelitianId, partisipasiPengabdianId)
+        // console.log(partisipasiUsulanId, user.name)
 
-        if (partisipasiPenelitianId) {
-            cekPenelitianId = await prisma.partisipasiPenelitian.findUnique({
-                where: {
-                    id: Number(partisipasiPenelitianId)
-                },
-                include: {
-                    penelitian: true
-                }
-            })
-        }
+        const cekPenelitianId = await prisma.partisipasiPenelitian.findMany({
+            where: {
+                id: Number(partisipasiUsulanId),
+                nameUser: user.name
+            },
+            include: {
+                penelitian: true
+            }
+        })
+
+
+        const cekPengabdianId = await prisma.partisipasiPengabdian.findMany({
+            where: {
+                id: Number(partisipasiUsulanId),
+                nameUser: user.name
+            },
+            include: {
+                pengabdian: true
+            }
+        })
+
+        // return console.log(cekPenelitianId, cekPengabdianId)
+
+
+        // if (partisipasiPenelitianId) {
+        //     cekPenelitianId = await prisma.partisipasiPenelitian.findUnique({
+        //         where: {
+        //             id: Number(partisipasiPenelitianId)
+        //         },
+        //         include: {
+        //             penelitian: true
+        //         }
+        //     })
+        // }else if (partisipasiPengabdianId) {
+        //     cekPengabdianId = await prisma.partisipasiPengabdian.findUnique({
+        //         where: {
+        //             id: Number(partisipasiPengabdianId)
+        //         },
+        //         include: {
+        //             pengabdian: true
+        //         }
+        //     })
+            
+        // }
 
         // return console.log(cekPenelitianId)
 
@@ -136,16 +332,22 @@ const createCatatanHarian = async (req, res) => {
             const {public_id,secure_url} = UploadPDF
 
             const options = {
-                name: "Catatan Penelitian",
                 nameUser: user.name,
-                idPenelitian: cekPenelitianId?.penelitian?.id,
                 urlPdf: secure_url,
                 pdf_id: public_id,
                 namePdf: req.file.originalname
 
             }
 
-            const dataDokumenCatatanHarian = await prisma.dokumenPenelitian.create({
+            if (cekPenelitianId.length !== 0) {
+                options.name = "Catatan Penelitian"
+                options.idPenelitian = cekPenelitianId[0]?.penelitian?.id
+            }else if (cekPengabdianId.length !== 0) {
+                options.name = "Catatan Pengabdian"
+                options.idPengabdian = cekPengabdianId[0]?.pengabdian?.id
+            }
+
+            const dataDokumenCatatanHarian = await prisma.Dokumen.create({
                 data: options
             })
 
@@ -154,18 +356,17 @@ const createCatatanHarian = async (req, res) => {
 
 
         if (idDokumenCatatanHarian !== '') {
-            options.idDokumenPenelitian = idDokumenCatatanHarian
+            options.idDokumen = idDokumenCatatanHarian
         }
 
-        if (partisipasiPenelitianId) {     
-            options.partisipasiPenelitianId = Number(partisipasiPenelitianId)
+        if (cekPenelitianId.length !== 0) {     
+            options.partisipasiPenelitianId = Number(cekPenelitianId[0].id)
         }
 
-        if (partisipasiPengabdianId) {
-            options.partisipasiPengabdianId = Number(partisipasiPengabdianId)
+        if (cekPengabdianId.length !== 0) {
+            options.partisipasiPengabdianId = Number(cekPengabdianId[0].id)
         }
         
-
         const dataCreateCatatanHarian = await prisma.CatatanHarian.create({
             data: options
         })
@@ -181,25 +382,33 @@ const createCatatanHarian = async (req, res) => {
 
 const updateByIdCatatanHarian = async (req, res) => {
     try{
-        const {kegiatan, ttg, kehadiran, partisipasiPenelitianId, partisipasiPengabdianId} = req.body
+        const {kegiatan, ttg, kehadiran, partisipasiUsulanId} = req.body
         const {id} = req.params
         const user = req.user[0]
-        let cekPenelitianId = ''
+        let idDokumenCatatanHarian = ''
 
         // console.log(partisipasiPenelitianId, partisipasiPengabdianId)
 
-        if (partisipasiPenelitianId) {
-            cekPenelitianId = await prisma.partisipasiPenelitian.findUnique({
-                where: {
-                    id: Number(partisipasiPenelitianId)
-                },
-                include: {
-                    penelitian: true
-                }
-            })
-        }
+        const cekPenelitianId = await prisma.partisipasiPenelitian.findMany({
+            where: {
+                id: Number(partisipasiUsulanId),
+                nameUser: user.name
+            },
+            include: {
+                penelitian: true
+            }
+        })
 
-        // return console.log(cekPenelitianId)
+
+        const cekPengabdianId = await prisma.partisipasiPengabdian.findMany({
+            where: {
+                id: Number(partisipasiUsulanId),
+                nameUser: user.name
+            },
+            include: {
+                pengabdian: true
+            }
+        })
         
 
         const option = {
@@ -215,11 +424,9 @@ const updateByIdCatatanHarian = async (req, res) => {
                     id: Number(id)
                 },
                 include: {
-                    dokumenPenelitian: true
+                    Dokumen: true
                 }
             })
-
-
             
             const optionsCloudinary =  {
                 folder: "P3MPolimdo/PDF/catatanHarian"
@@ -230,47 +437,54 @@ const updateByIdCatatanHarian = async (req, res) => {
             const {public_id,secure_url} = UploadPDF
             
             const options = {
-                name: "Catatan Penelitian",
                 nameUser: user.name,
-                idPenelitian: cekPenelitianId?.penelitian?.id,
                 urlPdf: secure_url,
                 pdf_id: public_id,
                 namePdf: req.file.originalname
                 
             }
 
+            if (cekPenelitianId.length !== 0) {
+                options.name = "Catatan Penelitian"
+                options.idPenelitian = cekPenelitianId[0]?.penelitian?.id
+            }else if (cekPengabdianId.length !== 0) {
+                options.name = "Catatan Pengabdian"
+                options.idPengabdian = cekPengabdianId[0]?.pengabdian?.id
+            }
+
             // return console.log(cekCatatanHarian, options)
             
-            if (cekCatatanHarian?.dokumenPenelitian?.id) {
-                await prisma.dokumenPenelitian.update({
+            if (cekCatatanHarian?.Dokumen?.id) {
+                await prisma.Dokumen.update({
                     where: {
-                        id: cekCatatanHarian.dokumenPenelitian.id
+                        id: cekCatatanHarian.Dokumen.id
                     },
                     data: options
                 })
             }else{
 
-                const createDokumen =  await prisma.dokumenPenelitian.create({
+                const createDokumen =  await prisma.Dokumen.create({
                     data: options
                 })
                 // console.log("ada", createDokumen)
 
-                option.idDokumenPenelitian = createDokumen.id
+                idDokumenCatatanHarian = createDokumen.id
             }
 
 
         }
 
-
-
-        if (partisipasiPenelitianId) {     
-           option.partisipasiPenelitianId = Number(partisipasiPenelitianId)
+        if (idDokumenCatatanHarian !== '') {
+            option.idDokumen = idDokumenCatatanHarian
         }
 
-        if (partisipasiPengabdianId) {
-            option.partisipasiPengabdianId = Number(partisipasiPengabdianId)
+        if (cekPenelitianId.length !== 0) {     
+            option.partisipasiPenelitianId = Number(cekPenelitianId[0].id)
         }
 
+        if (cekPengabdianId.length !== 0) {
+            option.partisipasiPengabdianId = Number(cekPengabdianId[0].id)
+        }
 
         // return console.log(option)
 
@@ -301,18 +515,18 @@ const deleteByIdCatatanHarian = async (req, res) => {
                 id: Number(id)
             },
             include: {
-                dokumenPenelitian: true
+                Dokumen: true
             }
         })
 
 
-        // return console.log(cekCatatanHarian?.dokumenPenelitian)
+        // return console.log(cekCatatanHarian?.Dokumen)
 
-        if (cekCatatanHarian?.dokumenPenelitian !== null) {
+        if (cekCatatanHarian?.Dokumen !== null) {
             
-            await prisma.dokumenPenelitian.delete({
+            await prisma.Dokumen.delete({
                 where: {
-                    id: cekCatatanHarian.dokumenPenelitian.id
+                    id: cekCatatanHarian.Dokumen.id
                 }
             })
         }

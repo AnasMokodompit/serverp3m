@@ -15,6 +15,7 @@ app.get('/', async (req, res, next) => {
   res.send({ message: 'Awesome it works 🐻' });
 });
 
+
 app.use('/api', require('./src/router/index'));
 
 app.use((req, res, next) => {
@@ -31,6 +32,8 @@ app.use((err, req, res, next) => {
     message: err.message,
   });
 });
+
+
 
 const PORT = process.env.PORT || 3005;
 app.listen(PORT, () => console.log(`🚀 @ http://localhost:${PORT}`));
